@@ -7,7 +7,7 @@ class BigInt final {
 public:
     // constructors
     BigInt() : m_number{"0"} {}
-    BigInt(int64_t num) : m_number{std::to_string(num)}, m_isNegative{num < 0} {}
+    BigInt(int64_t num) : BigInt{std::to_string(num)} {}
     BigInt(const std::string& s) : m_number{s} {
         if (m_number.empty())
             m_number = "0";
@@ -37,39 +37,49 @@ public:
     BigInt operator+(const BigInt& rh) {
         BigInt result{};
         if (m_isNegative == rh.m_isNegative) {
-            addNumbers(*this, rh, result);
+            sumOfNumbers(*this, rh, result);
             result.m_isNegative = m_isNegative;
         } else {
-            if (this->absolute() > rh.absolute()) {
-                subtractNumbers(*this, rh, result);
-                result.m_isNegative = m_isNegative;
-            } else if (this->absolute() == rh.absolute())
-                return BigInt{"0"};
-            else {
-                subtractNumbers(rh, *this, result);
-                result.m_isNegative = rh.m_isNegative;
-            }
+            differenceOfNumbers(*this, rh, result);
+            result.m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
         }
         return result;
+    }
+
+    BigInt& operator+=(const BigInt& rh) & {
+        if (m_isNegative == rh.m_isNegative) {
+            sumOfNumbers(*this, rh, *this);
+        } else {
+            differenceOfNumbers(*this, rh, *this);
+            m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
+        }
+        return *this;
     }
 
     BigInt operator-(const BigInt& rh) {
         auto result = BigInt{};
         if (m_isNegative != rh.m_isNegative) {
-            addNumbers(*this, rh, result);
+            sumOfNumbers(*this, rh, result);
             result.m_isNegative = m_isNegative;
         } else {
-            if (this->absolute() > rh.absolute()) {
-                subtractNumbers(*this, rh, result);
-                result.m_isNegative = m_isNegative;
-            } else if (*this == rh)
-                return BigInt{"0"};
-            else {
-                subtractNumbers(rh, *this, result);
-                result.m_isNegative = rh.m_isNegative;
-            }
+            differenceOfNumbers(*this, rh, result);
+            result.m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
+            if (result == 0)
+                result.m_isNegative = false;
         }
         return result;
+    }
+
+    BigInt& operator-=(const BigInt& rh) & {
+        if (m_isNegative != rh.m_isNegative) {
+            sumOfNumbers(*this, rh, *this);
+        } else {
+            differenceOfNumbers(*this, rh, *this);
+            m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
+            if (*this == 0)
+                m_isNegative = true;
+        }
+        return *this;
     }
 
     BigInt operator*(const BigInt& rh) {
@@ -162,51 +172,48 @@ public:
     }
 
 private:
-    auto addNumbers(const BigInt& a, const BigInt& b, BigInt& result) -> void {
-        auto& x = a.m_number;
-        auto& y = b.m_number;
+    auto sumOfNumbers(const BigInt& n1, const BigInt& n2, BigInt& result) -> void {
+        auto& x = n1.m_number;
+        auto& y = n2.m_number;
         auto& z = result.m_number;
-
-        if (z.size() < std::max(x.size(), y.size()))
-            z.insert(0, std::max(x.size(), y.size()) - z.size(), '0');
-
         const auto sizex = x.size();
         const auto sizey = y.size();
-        const auto sizez = z.size();
-
         auto remainder = 0;
-        for (auto i = 0; i < sizez || remainder; ++i) {
-            char a = getDigit(x, sizex - 1 - i);
-            char b = getDigit(y, sizey - 1 - i);
+        for (auto i = 0; (i < std::max(sizex, sizey)) || remainder; ++i) {
+            char a = (i >= sizex) ? '0' : x[sizex - 1 - i];
+            char b = (i >= sizey) ? '0' : y[sizey - 1 - i];
             auto sum = addDigits(a, b, remainder);
-            placeDigit(z, sum, sizez - 1 - i);
+            if (i >= z.size())
+                z.insert(0, 1, sum);
+            else
+                z[z.size() - 1 - i] = sum;
         }
     }
 
-    auto subtractNumbers(const BigInt& a, const BigInt& b, BigInt& result) -> void {
-        assert(a.absolute() > b.absolute());
-        auto& x = a.m_number;
-        auto& y = b.m_number;
-        auto& z = result.m_number;
-
-        if (z.size() < std::max(x.size(), y.size()))
-            z.insert(0, std::max(x.size(), y.size()) - z.size(), '0');
-
+    auto differenceOfNumbers(const BigInt& n1, const BigInt& n2, BigInt& result) -> void {
+        const std::string& x = (n1.absolute() > n2.absolute()) ? n1.m_number : n2.m_number;
+        const std::string& y = (n1.absolute() > n2.absolute()) ? n2.m_number : n1.m_number;
         const auto sizex = x.size();
         const auto sizey = y.size();
-        const auto sizez = z.size();
-
         auto remainder = 0;
-        for (auto i = 0; i < sizez || remainder; ++i) {
-            char a = getDigit(x, sizex - 1 - i);
-            char b = getDigit(y, sizey - 1 - i);
+        auto i = 0;
+        for (; i < std::max(sizex, sizey) || remainder; ++i) {
+            char a = (i >= sizex) ? '0' : x.at(sizex - 1 - i);  // getDigit(x, sizex - 1 - i);
+            char b = (i >= sizey) ? '0' : y.at(sizey - 1 - i);  // getDigit(y, sizey - 1 - i);
             auto sum = subtractDigits(a, b, remainder);
-            placeDigit(z, sum, sizez - 1 - i);
+            if (i >= result.m_number.size())
+                result.m_number.insert(0, 1, sum);
+            else
+                result.m_number[result.m_number.size() - 1 - i] = sum;
+            // placeDigit(z, sum, sizez - 1 - i);
         }
 
+        if (i < result.m_number.size() - 1)
+            result.m_number.erase(result.m_number.begin(), result.m_number.end() - 1 - i);
+
         // remove leading 0s
-        for (auto it = z.begin(); *it == '0' && it != z.end() - 1;)
-            it = z.erase(it);
+        for (auto it = result.m_number.begin(); *it == '0' && it != result.m_number.end() - 1;)
+            it = result.m_number.erase(it);
     }
 
     auto multiplyNumbers(const BigInt& a, const BigInt& b, BigInt& result) -> void {
@@ -306,10 +313,10 @@ private:
                 break;
 
             auto mult = BigInt{"9"};
-            while (mult * b > remainder)
+            while (mult * b > remainder) {
                 mult = mult - BigInt{"1"};
-
-            assert(mult > BigInt{"0"});
+                assert(mult > BigInt{"0"});
+            }
 
             result.m_number.push_back(mult.m_number[0]);
             remainder = remainder - (mult * b);
@@ -367,6 +374,8 @@ void testBigInt() {
     auto test = [&testCount, &allTestsPassed](auto cond, auto res) {
         try {
             std::cout << "test " << ++testCount << (cond == res ? ": passed" : ": error") << std::endl;
+            if (cond != res)
+                allTestsPassed = false;
         } catch (std::exception& e) {
             std::cout << "test " << ++testCount << ": error :: exception raised :: " << e.what() << std::endl;
             allTestsPassed = false;
@@ -414,13 +423,27 @@ void testBigInt() {
     test("-991723947"_bi + "-2342342"_bi, "-994066289"_bi);
     test("100"_bi + "-30"_bi, "70"_bi);
     test("-100"_bi + "30"_bi, "-70"_bi);
+    test(-30_bi + 100_bi, 70_bi);
     test(999_bi + 1_bi, 1000_bi);
+
+    {
+        BigInt a{-30};
+        a += 100_bi;
+        test(a, 70_bi);
+    }
 
     // subtraction
     test("100"_bi - "30"_bi, "70"_bi);
     test("100"_bi - "-30"_bi, "130"_bi);
+    test(30_bi - 100_bi, -70_bi);
     test("-100"_bi - "-30"_bi, "-70"_bi);
     test("-100"_bi - "30"_bi, "-130"_bi);
+
+    {
+        BigInt a{50};
+        a -= 70_bi;
+        test(a, -20_bi);
+    }
 
     // multiplication
     test("100"_bi * "10"_bi, "1000"_bi);
