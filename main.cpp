@@ -100,6 +100,8 @@ public:
     }
 
     BigInt operator^(const BigInt& rh) {
+        if (rh < BigInt{0})
+            return BigInt{0};
         if (rh == BigInt{0})
             return BigInt{1};
         BigInt result{1}, base{*this}, exp{rh};
@@ -354,8 +356,13 @@ auto operator""_bi(unsigned long long int number) -> BigInt { return BigInt{std:
 void testBigInt() {
     auto testCount = 0;
     auto test = [&testCount](auto cond, auto res) {
-        std::cout << "test " << ++testCount << (cond == res ? ": passed" : ": error") << std::endl;
-        return cond == res;
+        try {
+            std::cout << "test " << ++testCount << (cond == res ? ": passed" : ": error") << std::endl;
+        } catch (std::exception& e) {
+            std::cout << "test " << ++testCount << ": error :: exception raised :: " << e.what() << std::endl;
+        } catch (...) {
+            std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
+        }
     };
 
     auto testThrow = [&testCount](auto func) {
@@ -365,7 +372,7 @@ void testBigInt() {
             std::cout << "test " << ++testCount << ": passed :: " << e.what() << std::endl;
             return;
         } catch (...) {
-            std::cout << "test " << ++testCount << ": error :: unknown exception" << std::endl;
+            std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
             return;
         }
         std::cout << "test " << ++testCount << ": error :: no exception raised" << std::endl;
@@ -384,6 +391,10 @@ void testBigInt() {
     test("123"_bi <= "123"_bi, true);
     test("123"_bi >= "124"_bi, false);
     test("124"_bi <= "123"_bi, false);
+
+    // unary
+    test(-"100"_bi, "-100"_bi);
+    test(-"-100"_bi, "100"_bi);
 
     // addition
     test("991723947"_bi + "2342342"_bi, "994066289"_bi);
@@ -414,10 +425,7 @@ void testBigInt() {
 
     // power
     test(12_bi ^ 2_bi, 144_bi);
-
-    // unary
-    test(-"100"_bi, "-100"_bi);
-    test(-"-100"_bi, "100"_bi);
+    test(12_bi ^ -2_bi, 0_bi);
 }
 
 void main() { testBigInt(); }
