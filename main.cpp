@@ -315,9 +315,9 @@ private:
     }
 
     auto placeDigit(std::string& s, int digit, int index) -> void {
-        assert(index < s.size());
+        assert(index < (int)s.size());
         if (index < 0)
-            s.append(0, 1, digit);
+            s.insert(0, 1, digit);
         else
             s[index] = digit;
     }
@@ -401,6 +401,7 @@ void testBigInt() {
     test("-991723947"_bi + "-2342342"_bi, "-994066289"_bi);
     test("100"_bi + "-30"_bi, "70"_bi);
     test("-100"_bi + "30"_bi, "-70"_bi);
+    test(999_bi + 1_bi, 1000_bi);
 
     // subtraction
     test("100"_bi - "30"_bi, "70"_bi);
