@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#define TEST_LINE(x, y) test(x, y, __LINE__)
+#define TEST_THROW_LINE(x) testThrow(x, __LINE__)
+
 class BigInt final {
 public:
     // constructors
@@ -371,104 +374,104 @@ auto operator""_bi(const char* s, size_t size) -> BigInt { return BigInt{s}; }
 auto operator""_bi(unsigned long long int number) -> BigInt { return BigInt{std::to_string(number)}; }
 
 void testBigInt() {
-    auto testCount = 0;
     auto allTestsPassed = true;
-    auto test = [&testCount, &allTestsPassed](auto cond, auto res) {
+
+    auto test = [&allTestsPassed](auto cond, auto res, auto line) {
         try {
-            std::cout << "test " << ++testCount << (cond == res ? ": passed" : ": error") << std::endl;
+            std::cout << "test " << line << (cond == res ? ": passed" : ": error") << std::endl;
             if (cond != res)
                 allTestsPassed = false;
         } catch (std::exception& e) {
-            std::cout << "test " << ++testCount << ": error :: exception raised :: " << e.what() << std::endl;
+            std::cout << "test " << line << ": error :: exception raised :: " << e.what() << std::endl;
             allTestsPassed = false;
         } catch (...) {
-            std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
+            std::cout << "test " << line << ": error :: unknown exception raised" << std::endl;
             allTestsPassed = false;
         }
     };
 
-    auto testThrow = [&testCount, &allTestsPassed](auto func) {
+    auto testThrow = [&allTestsPassed](auto func, auto line) {
         try {
             func();
         } catch (std::exception& e) {
-            std::cout << "test " << ++testCount << ": passed :: " << e.what() << std::endl;
+            std::cout << "test " << line << ": passed :: " << e.what() << std::endl;
             return;
         } catch (...) {
-            std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
+            std::cout << "test " << line << ": error :: unknown exception raised" << std::endl;
             allTestsPassed = false;
             return;
         }
-        std::cout << "test " << ++testCount << ": error :: no exception raised" << std::endl;
+        std::cout << "test " << line << ": error :: no exception raised" << std::endl;
         allTestsPassed = false;
     };
 
     // comparison
-    test("1234"_bi == "1234"_bi, true);
-    test("1234"_bi == "-1234"_bi, false);
-    test("125"_bi != "120"_bi, true);
-    test("125"_bi != "125"_bi, false);
-    test("12312"_bi > "998"_bi, true);
-    test("998"_bi > "12312"_bi, false);
-    test("998"_bi < "12312"_bi, true);
-    test("12312"_bi < "998"_bi, false);
-    test("123"_bi >= "123"_bi, true);
-    test("123"_bi <= "123"_bi, true);
-    test("123"_bi >= "124"_bi, false);
-    test("124"_bi <= "123"_bi, false);
+    TEST_LINE("1234"_bi == "1234"_bi, true);
+    TEST_LINE("1234"_bi == "-1234"_bi, false);
+    TEST_LINE("125"_bi != "120"_bi, true);
+    TEST_LINE("125"_bi != "125"_bi, false);
+    TEST_LINE("12312"_bi > "998"_bi, true);
+    TEST_LINE("998"_bi > "12312"_bi, false);
+    TEST_LINE("998"_bi < "12312"_bi, true);
+    TEST_LINE("12312"_bi < "998"_bi, false);
+    TEST_LINE("123"_bi >= "123"_bi, true);
+    TEST_LINE("123"_bi <= "123"_bi, true);
+    TEST_LINE("123"_bi >= "124"_bi, false);
+    TEST_LINE("124"_bi <= "123"_bi, false);
 
     // unary
-    test(-"100"_bi, "-100"_bi);
-    test(-"-100"_bi, "100"_bi);
+    TEST_LINE(-"100"_bi, "-100"_bi);
+    TEST_LINE(-"-100"_bi, "100"_bi);
 
     // addition
-    test("991723947"_bi + "2342342"_bi, "994066289"_bi);
-    test("-991723947"_bi + "-2342342"_bi, "-994066289"_bi);
-    test("100"_bi + "-30"_bi, "70"_bi);
-    test("-100"_bi + "30"_bi, "-70"_bi);
-    test(-30_bi + 100_bi, 70_bi);
-    test(999_bi + 1_bi, 1000_bi);
+    TEST_LINE("991723947"_bi + "2342342"_bi, "994066289"_bi);
+    TEST_LINE("-991723947"_bi + "-2342342"_bi, "-994066289"_bi);
+    TEST_LINE("100"_bi + "-30"_bi, "70"_bi);
+    TEST_LINE("-100"_bi + "30"_bi, "-70"_bi);
+    TEST_LINE(-30_bi + 100_bi, 70_bi);
+    TEST_LINE(999_bi + 1_bi, 1000_bi);
 
     {
         BigInt a{-30};
         a += 100_bi;
-        test(a, 70_bi);
-        test(a++, 70_bi);
-        test(++a, 72_bi);
+        TEST_LINE(a, 70_bi);
+        TEST_LINE(a++, 70_bi);
+        TEST_LINE(++a, 72_bi);
     }
 
     // subtraction
-    test("100"_bi - "30"_bi, "70"_bi);
-    test("100"_bi - "-30"_bi, "130"_bi);
-    test(30_bi - 100_bi, -70_bi);
-    test("-100"_bi - "-30"_bi, "-70"_bi);
-    test("-100"_bi - "30"_bi, "-130"_bi);
+    TEST_LINE("100"_bi - "30"_bi, "70"_bi);
+    TEST_LINE("100"_bi - "-30"_bi, "130"_bi);
+    TEST_LINE(30_bi - 100_bi, -70_bi);
+    TEST_LINE("-100"_bi - "-30"_bi, "-70"_bi);
+    TEST_LINE("-100"_bi - "30"_bi, "-130"_bi);
 
     {
         BigInt a{50};
         a -= 70_bi;
-        test(a, -20_bi);
-        test(a--, -20_bi);
-        test(--a, -22_bi);
+        TEST_LINE(a, -20_bi);
+        TEST_LINE(a--, -20_bi);
+        TEST_LINE(--a, -22_bi);
     }
 
     // multiplication
-    test("100"_bi * "10"_bi, "1000"_bi);
-    test("10"_bi * "100"_bi, "1000"_bi);
-    test("99"_bi * "999"_bi, "98901"_bi);
-    test("-99"_bi * "-999"_bi, "98901"_bi);
-    test("99"_bi * "-999"_bi, "-98901"_bi);
+    TEST_LINE("100"_bi * "10"_bi, "1000"_bi);
+    TEST_LINE("10"_bi * "100"_bi, "1000"_bi);
+    TEST_LINE("99"_bi * "999"_bi, "98901"_bi);
+    TEST_LINE("-99"_bi * "-999"_bi, "98901"_bi);
+    TEST_LINE("99"_bi * "-999"_bi, "-98901"_bi);
 
     // division
-    test("100"_bi / "10"_bi, "10"_bi);
-    test(8005672_bi / 2000_bi, 4002_bi);
-    testThrow([]() { 100_bi / 0_bi; });
+    TEST_LINE("100"_bi / "10"_bi, "10"_bi);
+    TEST_LINE(8005672_bi / 2000_bi, 4002_bi);
+    TEST_THROW_LINE([]() { 100_bi / 0_bi; });
 
     // modulo
-    test(8005672_bi % 2000_bi, 1672_bi);
+    TEST_LINE(8005672_bi % 2000_bi, 1672_bi);
 
     // power
-    test(12_bi ^ 2_bi, 144_bi);
-    test(12_bi ^ -2_bi, 0_bi);
+    TEST_LINE(12_bi ^ 2_bi, 144_bi);
+    TEST_LINE(12_bi ^ -2_bi, 0_bi);
 
     std::cout << std::boolalpha << "all tests passed: " << allTestsPassed << std::endl;
 }
