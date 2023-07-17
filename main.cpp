@@ -35,51 +35,53 @@ public:
 
     // Arithmetic operators
     BigInt operator+(const BigInt& rh) {
-        BigInt result{};
-        if (m_isNegative == rh.m_isNegative) {
-            sumOfNumbers(*this, rh, result);
-            result.m_isNegative = m_isNegative;
-        } else {
-            differenceOfNumbers(*this, rh, result);
-            result.m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
-        }
+        BigInt result{*this};
+        result += rh;
         return result;
     }
-
     BigInt& operator+=(const BigInt& rh) & {
         if (m_isNegative == rh.m_isNegative) {
             sumOfNumbers(*this, rh, *this);
         } else {
-            differenceOfNumbers(*this, rh, *this);
             m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
+            differenceOfNumbers(*this, rh, *this);
         }
         return *this;
     }
-
-    BigInt operator-(const BigInt& rh) {
-        auto result = BigInt{};
-        if (m_isNegative != rh.m_isNegative) {
-            sumOfNumbers(*this, rh, result);
-            result.m_isNegative = m_isNegative;
-        } else {
-            differenceOfNumbers(*this, rh, result);
-            result.m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
-            if (result == 0)
-                result.m_isNegative = false;
-        }
-        return result;
+    BigInt& operator++() {
+        (*this) += BigInt{1};
+        return *this;
+    }
+    BigInt operator++(int) {
+        BigInt copy{*this};
+        (*this) += BigInt{1};
+        return copy;
     }
 
+    BigInt operator-(const BigInt& rh) {
+        auto result = BigInt{*this};
+        result -= rh;
+        return result;
+    }
     BigInt& operator-=(const BigInt& rh) & {
         if (m_isNegative != rh.m_isNegative) {
             sumOfNumbers(*this, rh, *this);
         } else {
-            differenceOfNumbers(*this, rh, *this);
             m_isNegative = (m_isNegative != (this->absolute() < rh.absolute()));
-            if (*this == 0)
-                m_isNegative = true;
+            differenceOfNumbers(*this, rh, *this);
+            if (this->m_number == "0")
+                m_isNegative = false;
         }
         return *this;
+    }
+    BigInt& operator--() {
+        (*this) -= BigInt{1};
+        return *this;
+    }
+    BigInt operator--(int) {
+        BigInt copy{*this};
+        (*this) -= BigInt{1};
+        return copy;
     }
 
     BigInt operator*(const BigInt& rh) {
@@ -430,6 +432,8 @@ void testBigInt() {
         BigInt a{-30};
         a += 100_bi;
         test(a, 70_bi);
+        test(a++, 70_bi);
+        test(++a, 72_bi);
     }
 
     // subtraction
@@ -443,6 +447,8 @@ void testBigInt() {
         BigInt a{50};
         a -= 70_bi;
         test(a, -20_bi);
+        test(a--, -20_bi);
+        test(--a, -22_bi);
     }
 
     // multiplication
