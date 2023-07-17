@@ -219,21 +219,27 @@ private:
         const auto sizez = z.size();
 
         // TODO: use vector of BigInts here instead
-        std::vector<unsigned> sums(sizez, 0);
+        std::vector<BigInt> sums(sizez, 0);
         for (auto i = 0; i < sizex; ++i) {
             for (auto j = 0; j < sizey; ++j) {
-                sums[i + j] += ((x[sizex - 1 - i] - '0') * (y[sizey - 1 - j] - '0'));
+                sums[i + j] = sums[i + j] + BigInt{(x[sizex - 1 - i] - '0') * (y[sizey - 1 - j] - '0')};
             }
         }
 
-        auto remainder = 0;
+        BigInt remainder = 0;
         for (auto i = 0; i < sizez; ++i) {
             auto sum = sums[i];
-            sum += remainder;
-            remainder = sum / 10;
-            if (sum > 9)
-                sum %= 10;
-            z[sizez - 1 - i] = sum + '0';
+            sum = sum + remainder;
+
+            if (sum.m_number.size() > 1) {
+                remainder = sum;
+                remainder.m_number.erase(remainder.m_number.end() - 1);
+            }
+
+            if (sum > BigInt{9})
+                sum = BigInt{sum.m_number[sum.m_number.size() - 1] - '0'};
+            assert(sum.m_number.size() == 1);
+            z[sizez - 1 - i] = sum.m_number[0];
         }
 
         // O((M+N)*M*N)
@@ -266,6 +272,7 @@ private:
     auto divideNumbers(const BigInt& a, const BigInt& b, BigInt& result, BigInt& remainder) -> void {
         assert(b != BigInt{"0"});
 
+        // TODO handle remainder here
         if (a <= b) {
             result = (a == b) ? BigInt{"1"} : BigInt{"0"};
             return;
@@ -274,6 +281,7 @@ private:
         auto numerator = a.m_number;
         const auto& denominator = b.m_number;
 
+        // TODO there is no point to this, while using push_back below
         result.m_number.resize(numerator.size() - denominator.size() + 1, '0');
 
         remainder = BigInt{std::string{*numerator.begin()}};
@@ -355,17 +363,20 @@ auto operator""_bi(unsigned long long int number) -> BigInt { return BigInt{std:
 
 void testBigInt() {
     auto testCount = 0;
-    auto test = [&testCount](auto cond, auto res) {
+    auto allTestsPassed = true;
+    auto test = [&testCount, &allTestsPassed](auto cond, auto res) {
         try {
             std::cout << "test " << ++testCount << (cond == res ? ": passed" : ": error") << std::endl;
         } catch (std::exception& e) {
             std::cout << "test " << ++testCount << ": error :: exception raised :: " << e.what() << std::endl;
+            allTestsPassed = false;
         } catch (...) {
             std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
+            allTestsPassed = false;
         }
     };
 
-    auto testThrow = [&testCount](auto func) {
+    auto testThrow = [&testCount, &allTestsPassed](auto func) {
         try {
             func();
         } catch (std::exception& e) {
@@ -373,9 +384,11 @@ void testBigInt() {
             return;
         } catch (...) {
             std::cout << "test " << ++testCount << ": error :: unknown exception raised" << std::endl;
+            allTestsPassed = false;
             return;
         }
         std::cout << "test " << ++testCount << ": error :: no exception raised" << std::endl;
+        allTestsPassed = false;
     };
 
     // comparison
@@ -427,6 +440,8 @@ void testBigInt() {
     // power
     test(12_bi ^ 2_bi, 144_bi);
     test(12_bi ^ -2_bi, 0_bi);
+
+    std::cout << std::boolalpha << "all tests passed: " << allTestsPassed << std::endl;
 }
 
 void main() { testBigInt(); }
