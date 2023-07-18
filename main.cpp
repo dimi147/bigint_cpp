@@ -1,6 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #define TEST_LINE(x, y) test(x, y, __LINE__)
@@ -22,12 +23,12 @@ public:
     // copy/move
     BigInt(const BigInt& r) : m_number{r.m_number}, m_isNegative{r.m_isNegative} {}
     BigInt(BigInt&& r) : m_number{std::move(r.m_number)}, m_isNegative{r.m_isNegative} {}
-    auto operator=(const BigInt& rh) -> BigInt& {
+    auto operator=(const BigInt& rh) & -> BigInt& {
         m_number = rh.m_number;
         m_isNegative = rh.m_isNegative;
         return *this;
     }
-    auto operator=(BigInt&& rh) -> BigInt& {
+    auto operator=(BigInt&& rh) & -> BigInt& {
         m_number = std::move(rh.m_number);
         m_isNegative = std::move(rh.m_isNegative);
         return *this;
@@ -56,11 +57,11 @@ public:
         }
         return *this;
     }
-    BigInt& operator++() {
+    BigInt& operator++() & {
         (*this) += BigInt{1};
         return *this;
     }
-    BigInt operator++(int) {
+    BigInt operator++(int) & {
         BigInt copy{*this};
         (*this) += BigInt{1};
         return copy;
@@ -85,11 +86,11 @@ public:
         }
         return *this;
     }
-    BigInt& operator--() {
+    BigInt& operator--() & {
         (*this) -= BigInt{1};
         return *this;
     }
-    BigInt operator--(int) {
+    BigInt operator--(int) & {
         BigInt copy{*this};
         (*this) -= BigInt{1};
         return copy;
@@ -100,7 +101,7 @@ public:
         result *= rh;
         return result;
     }
-    BigInt& operator*=(const BigInt& rh) {
+    BigInt& operator*=(const BigInt& rh) & {  // TODO add tests
         if (m_number == "0" || rh.m_number == "0") {
             (*this) = BigInt{0};
             return (*this);
@@ -112,21 +113,29 @@ public:
     }
 
     BigInt operator/(const BigInt& rh) {
-        BigInt result{}, remainder{};
         if (rh == BigInt{"0"})
             throw(std::invalid_argument{"Division by 0"});
-        result.m_isNegative = (m_isNegative != rh.m_isNegative);
-        divideNumbers(*this, rh, result, remainder);
+        const bool isNegative = (m_isNegative != rh.m_isNegative);
+        auto [result, remainder] = divideNumbers(*this, rh);
+        result.m_isNegative = isNegative;
         return result;
+    }
+    BigInt& operator/=(const BigInt& rh) & {  // TODO add tests
+        (*this) = (*this) / rh;
+        return (*this);
     }
 
     BigInt operator%(const BigInt& rh) {
-        BigInt result{}, remainder{};
         if (rh == BigInt{"0"})
             throw(std::invalid_argument{"Division by 0"});
-        result.m_isNegative = (m_isNegative != rh.m_isNegative);
-        divideNumbers(*this, rh, result, remainder);
+        const bool isNegative = (m_isNegative != rh.m_isNegative);
+        auto [result, remainder] = divideNumbers(*this, rh);
+        remainder.m_isNegative = isNegative;
         return remainder;
+    }
+    BigInt& operator%=(const BigInt& rh) & {  // TODO add tests
+        (*this) = (*this) % rh;
+        return (*this);
     }
 
     BigInt operator^(const BigInt& rh) {
@@ -142,6 +151,10 @@ public:
             exp = exp / BigInt{2};
         }
         return result;
+    }
+    BigInt& operator^=(const BigInt& rh) & {  // TODO add tests
+        (*this) = (*this) * rh;
+        return (*this);
     }
 
     // Unary operators
@@ -207,17 +220,20 @@ private:
         const auto sizex = x.size();
         const auto sizey = y.size();
         auto result = BigInt{0};
-        result.m_number.resize(std::max(sizex, sizey), '0');
+        result.m_number.resize(std::max(sizex, sizey) + 1, '0');
         auto remainder = 0;
+
         for (auto i = 0; (i < std::max(sizex, sizey)) || remainder; ++i) {
             char a = (i >= sizex) ? '0' : x[sizex - 1 - i];
             char b = (i >= sizey) ? '0' : y[sizey - 1 - i];
             auto sum = addDigits(a, b, remainder);
-            if (i >= result.m_number.size())
-                result.m_number.insert(0, 1, sum);
-            else
-                result.m_number[result.m_number.size() - 1 - i] = sum;
+            assert(i < result.m_number.size());
+            result.m_number[result.m_number.size() - 1 - i] = sum;
         }
+
+        if (result.m_number[0] == '0')
+            result.m_number.erase(result.m_number.begin());
+
         return result;
     }
 
@@ -238,15 +254,11 @@ private:
         const auto sizey = y.size();
         auto result = BigInt{0};
         result.m_number.resize(std::max(sizex, sizey), '0');
-        auto remainder = 0;
-        auto i = 0;
-        for (; i < std::max(sizex, sizey) || remainder; ++i) {
+
+        for (auto i = 0, remainder = 0; i < std::max(sizex, sizey) || remainder; ++i) {
             char a = (i >= sizex) ? '0' : x.at(sizex - 1 - i);
             char b = (i >= sizey) ? '0' : y.at(sizey - 1 - i);
             auto sum = subtractDigits(a, b, remainder);
-            // if (i >= result.m_number.size())
-            //     result.m_number.insert(0, 1, sum);
-            // else
             assert(i < result.m_number.size());
             result.m_number[result.m_number.size() - 1 - i] = sum;
         }
@@ -296,26 +308,23 @@ private:
         return result;
     }
 
-    auto divideNumbers(BigInt a, BigInt b, BigInt& result, BigInt& remainder) -> void {
+    auto divideNumbers(BigInt a, BigInt b) -> std::pair<BigInt, BigInt> {
         assert(b != BigInt{"0"});
-
         a = a.absolute();
         b = b.absolute();
-        if (a <= b) {
-            result = (a == b) ? BigInt{"1"} : BigInt{"0"};
-            remainder = (a == b) ? BigInt{"0"} : BigInt{a};
-            return;
-        }
 
-        auto& numerator = a.m_number;
-        const auto& denominator = b.m_number;
+        if (a <= b)
+            return (a == b ? std::make_pair(BigInt{1}, BigInt{0}) : std::make_pair(BigInt{0}, BigInt{a}));
+
+        BigInt result{0}, remainder{0};
         result.m_number.clear();
+        auto& numerator = a.m_number;
         remainder = BigInt{std::string{*numerator.begin()}};
         numerator.erase(numerator.begin());
 
         bool firstPass = true;
         bool addZeros = false;
-        while (remainder.m_number.size() + numerator.size() >= denominator.size()) {
+        while (remainder.m_number.size() + numerator.size() >= b.m_number.size()) {
             if (remainder == BigInt{"0"})
                 addZeros = true;
 
@@ -342,6 +351,8 @@ private:
             firstPass = false;
             addZeros = false;
         }
+
+        return {result, remainder};
     }
 
     bool m_isNegative{false};
@@ -460,6 +471,10 @@ void testBigInt() {
     TEST_LINE(3_bi ^ 3_bi, 27_bi);
     TEST_LINE(3_bi ^ 7_bi, 2187_bi);
     TEST_LINE(12_bi ^ -2_bi, 0_bi);
+    TEST_LINE(-3_bi ^ 2_bi, 9_bi);
+    TEST_LINE(-3_bi ^ 3_bi, -27_bi);
+    TEST_LINE(-3_bi ^ 12_bi, 531441_bi);
+    TEST_LINE(-3_bi ^ 13_bi, -1594323_bi);
 
     std::cout << std::boolalpha << "all tests passed: " << allTestsPassed << std::endl;
 }
