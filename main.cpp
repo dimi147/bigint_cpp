@@ -284,9 +284,9 @@ private:
     auto divideNumbers(const BigInt& a, const BigInt& b, BigInt& result, BigInt& remainder) -> void {
         assert(b != BigInt{"0"});
 
-        // TODO handle remainder here
         if (a <= b) {
             result = (a == b) ? BigInt{"1"} : BigInt{"0"};
+            remainder = (a == b) ? BigInt{"0"} : BigInt{a};
             return;
         }
 
@@ -422,6 +422,7 @@ void testBigInt() {
     // unary
     TEST_LINE(-"100"_bi, "-100"_bi);
     TEST_LINE(-"-100"_bi, "100"_bi);
+    TEST_LINE(-"0"_bi, 0_bi);
 
     // addition
     TEST_LINE("991723947"_bi + "2342342"_bi, "994066289"_bi);
@@ -433,8 +434,7 @@ void testBigInt() {
 
     {
         BigInt a{-30};
-        a += 100_bi;
-        TEST_LINE(a, 70_bi);
+        TEST_LINE(a += 100_bi, 70_bi);
         TEST_LINE(a++, 70_bi);
         TEST_LINE(++a, 72_bi);
     }
@@ -448,8 +448,7 @@ void testBigInt() {
 
     {
         BigInt a{50};
-        a -= 70_bi;
-        TEST_LINE(a, -20_bi);
+        TEST_LINE(a -= 70_bi, -20_bi);
         TEST_LINE(a--, -20_bi);
         TEST_LINE(--a, -22_bi);
     }
@@ -457,9 +456,11 @@ void testBigInt() {
     // multiplication
     TEST_LINE("100"_bi * "10"_bi, "1000"_bi);
     TEST_LINE("10"_bi * "100"_bi, "1000"_bi);
+    TEST_LINE(-10_bi * 100_bi, -1000_bi);
+    TEST_LINE(10_bi * -100_bi, -1000_bi);
+    TEST_LINE(-10_bi * -100_bi, 1000_bi);
     TEST_LINE("99"_bi * "999"_bi, "98901"_bi);
-    TEST_LINE("-99"_bi * "-999"_bi, "98901"_bi);
-    TEST_LINE("99"_bi * "-999"_bi, "-98901"_bi);
+    TEST_LINE(999_bi * 0_bi, 0_bi);
 
     // division
     TEST_LINE("100"_bi / "10"_bi, "10"_bi);
@@ -468,6 +469,7 @@ void testBigInt() {
 
     // modulo
     TEST_LINE(8005672_bi % 2000_bi, 1672_bi);
+    TEST_LINE(50_bi % 100_bi, 50_bi);
 
     // power
     TEST_LINE(12_bi ^ 2_bi, 144_bi);
