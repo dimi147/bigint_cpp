@@ -97,7 +97,7 @@ public:
         result.m_isNegative = (m_isNegative != rh.m_isNegative);
         return result;
     }
-    BigInt& operator*=(const BigInt& rh) & {  // TODO add tests
+    BigInt& operator*=(const BigInt& rh) & {
         (*this) = (*this) * rh;
         return (*this);
     }
@@ -110,7 +110,7 @@ public:
         result.m_isNegative = isNegative;
         return result;
     }
-    BigInt& operator/=(const BigInt& rh) & {  // TODO add tests
+    BigInt& operator/=(const BigInt& rh) & {
         (*this) = (*this) / rh;
         return (*this);
     }
@@ -123,7 +123,7 @@ public:
         remainder.m_isNegative = isNegative;
         return remainder;
     }
-    BigInt& operator%=(const BigInt& rh) & {  // TODO add tests
+    BigInt& operator%=(const BigInt& rh) & {
         (*this) = (*this) % rh;
         return (*this);
     }
@@ -142,7 +142,7 @@ public:
         }
         return result;
     }
-    BigInt& operator^=(const BigInt& rh) & {  // TODO add tests
+    BigInt& operator^=(const BigInt& rh) & {
         (*this) = (*this) ^ rh;
         return (*this);
     }
@@ -314,7 +314,7 @@ private:
 
         while (remainder.m_number.size() + numerator.size() >= b.m_number.size()) {
             bool addZeros = (remainder.m_number == "0");
-            while (remainder < b && !numerator.empty()) {  // TODO maybe can replace this loop with copy of substring
+            while (remainder < b && !numerator.empty()) {
                 if (remainder.m_number == "0")
                     remainder.m_number[0] = *numerator.begin();
                 else
