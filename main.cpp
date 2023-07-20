@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -10,14 +11,16 @@
 class BigInt final {
 public:
     // constructors
-    BigInt() : m_number{"0"} {}
-    BigInt(int64_t num) : BigInt{std::to_string(num)} {}
-    BigInt(const std::string& s) : m_number{s} {
-        if (m_number.empty())
-            m_number = "0";
-        m_isNegative = (m_number[0] == '-');
+    explicit BigInt(int64_t num) : BigInt{std::to_string(num)} {}
+    explicit BigInt(const std::string& s) : m_number{s} {
+        m_isNegative = (!m_number.empty() && m_number[0] == '-');
         if (m_isNegative)
             m_number.erase(m_number.begin());
+        if (m_number.empty())
+            throw std::invalid_argument("Invalid integer as string");
+        for (auto it = m_number.begin(); it != m_number.end(); ++it)
+            if (!std::isdigit(*it))
+                throw std::invalid_argument("Invalid integer as string");
     }
 
     // copy/move
@@ -268,14 +271,14 @@ private:
         auto result = BigInt{0};
         result.m_number.resize(sizex + sizey, '0');
 
-        std::vector<BigInt> sums(result.m_number.size(), 0);
+        std::vector<BigInt> sums(result.m_number.size(), BigInt{0});
         for (auto i = 0; i < sizex; ++i) {
             for (auto j = 0; j < sizey; ++j) {
                 sums[i + j] = sums[i + j] + BigInt{(x[sizex - 1 - i] - '0') * (y[sizey - 1 - j] - '0')};
             }
         }
 
-        BigInt remainder = 0;
+        BigInt remainder{0};
         for (auto i = 0; i < result.m_number.size(); ++i) {
             auto sum = sums[i];
             sum = sum + remainder;
@@ -380,6 +383,11 @@ void testBigInt() {
         allTestsPassed = false;
     };
 
+    // construction
+    TEST_THROW_LINE([]() { BigInt{""}; });
+    TEST_THROW_LINE([]() { BigInt{"-"}; });
+    TEST_THROW_LINE([]() { BigInt{"227f"}; });
+
     // comparison
     TEST_LINE("1234"_bi == "1234"_bi, true);
     TEST_LINE("1234"_bi == "-1234"_bi, false);
@@ -440,8 +448,8 @@ void testBigInt() {
     TEST_LINE(999_bi * 0_bi, 0_bi);
     {
         BigInt a{3};
-        TEST_LINE(a *= 2, 6_bi);
-        TEST_LINE(a *= -3, -18_bi);
+        TEST_LINE(a *= 2_bi, 6_bi);
+        TEST_LINE(a *= -3_bi, -18_bi);
         TEST_LINE(a, -18_bi);
     }
 
