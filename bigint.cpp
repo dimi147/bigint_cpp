@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 
+using namespace BigIntType;
+
 BigInt::BigInt(int64_t num) : BigInt{std::to_string(num)} {}
 BigInt::BigInt(const std::string& s) : m_number{s} {
     m_isNegative = (!m_number.empty() && m_number[0] == '-');
@@ -171,8 +173,10 @@ auto BigInt::operator>(const BigInt& rh) const -> bool { return !(*this == rh ||
 auto BigInt::operator<=(const BigInt& rh) const -> bool { return *this == rh || *this < rh; }
 auto BigInt::operator>=(const BigInt& rh) const -> bool { return *this == rh || *this > rh; }
 
-std::ostream& operator<<(std::ostream& os, const BigInt& n) { return os << (n.m_isNegative ? "-" : "") << n.m_number; }
-std::istream& operator>>(std::istream& is, BigInt& n) {
+std::ostream& BigIntType::operator<<(std::ostream& os, const BigInt& n) {
+    return os << (n.m_isNegative ? "-" : "") << n.m_number;
+}
+std::istream& BigIntType::operator>>(std::istream& is, BigInt& n) {
     if (is.peek() && is.eof())
         return is;
 
@@ -348,5 +352,5 @@ auto BigInt::divideNumbers(BigInt a, BigInt b) -> std::pair<BigInt, BigInt> {
     return {result, remainder};
 }
 
-auto operator""_bi(const char* s, size_t size) -> BigInt { return BigInt{s}; }
-auto operator""_bi(unsigned long long int number) -> BigInt { return BigInt{std::to_string(number)}; }
+auto BigIntType::operator""_bi(const char* s, size_t size) -> BigInt { return BigInt{s}; }
+auto BigIntType::operator""_bi(unsigned long long int number) -> BigInt { return BigInt{std::to_string(number)}; }

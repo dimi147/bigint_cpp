@@ -5,6 +5,8 @@
 #define TEST_LINE(x, y) test(x, y, __LINE__)
 #define TEST_THROW_LINE(x) testThrow(x, __LINE__)
 
+using namespace BigIntType;
+
 void testBigInt() {
     auto allTestsPassed = true;
 
@@ -27,8 +29,8 @@ void testBigInt() {
             func();
             std::cout << "test " << line << ": error :: no exception raised" << std::endl;
             allTestsPassed = false;
-        } catch (std::exception& e) {
-            std::cout << "test " << line << ": passed :: " << e.what() << std::endl;
+        } catch (std::exception&) {
+            std::cout << "test " << line << ": passed\n";
         } catch (...) {
             std::cout << "test " << line << ": error :: unknown exception raised" << std::endl;
             allTestsPassed = false;
@@ -153,30 +155,28 @@ void testBigInt() {
     // stream
     {
         std::stringstream ss{};
-        ss << "-100"_bi;
+        ss << -100_bi;
         auto passed = (std::stoi(ss.str()) == -100);
-        std::cout << "test " << __LINE__ << (passed ? ": passed" : ": failed") << std::endl;
-        allTestsPassed |= passed;
+        TEST_LINE(passed, true);
     }
     {
         std::stringstream ss1{"5678"};
         std::stringstream ss2{"-4242"};
-        auto n = "1234"_bi;
+        auto n = 1234_bi;
         ss1 >> n;
-        auto passed = (n == "12345678"_bi);
-        std::cout << "test " << __LINE__ << (passed ? ": passed" : ": failed") << std::endl;
+        auto passed = (n == 12345678_bi);
+        TEST_LINE(passed, true);
         ss2 >> n;
-        passed |= (n == "-4242"_bi);
-        std::cout << "test " << __LINE__ << (passed ? ": passed" : ": failed") << std::endl;
-        allTestsPassed |= passed;
+        passed |= (n == -4242_bi);
+        TEST_LINE(passed, true);
     }
     TEST_THROW_LINE([]() {
-        auto n = "123"_bi;
+        auto n = 123_bi;
         std::stringstream ss{"45f"};
         ss >> n;
     });
 
-    std::cout << "\n\n" << std::boolalpha << "All tests passed: " << allTestsPassed << "\n\n";
+    std::cout << "\n" << std::boolalpha << "All tests passed: " << allTestsPassed << "\n\n";
 }
 
 void main() { testBigInt(); }

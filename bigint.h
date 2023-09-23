@@ -1,7 +1,12 @@
+#ifndef BIGINT_H_
+#define BIGINT_H_
+
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <utility>
+
+namespace BigIntType {
 
 class BigInt final {
 public:
@@ -71,3 +76,7 @@ private:
 
 auto operator""_bi(const char* s, size_t size) -> BigInt;
 auto operator""_bi(unsigned long long int number) -> BigInt;
+
+}  // namespace BigIntType
+
+#endif  // BIG_INT_H_

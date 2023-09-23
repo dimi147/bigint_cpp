@@ -7,7 +7,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(bigint SHARED bigint.cpp)
+add_library(bigint bigint.cpp)
 add_executable(bigint_test bigint.cpp bigint_test.cpp)
 
 install(TARGETS bigint_test bigint
